@@ -1,0 +1,12 @@
+# Build files
+build/
+*.o
+*.out
+*.elf
+*.bin
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
