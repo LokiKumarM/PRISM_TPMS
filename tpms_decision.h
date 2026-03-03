@@ -9,7 +9,7 @@ void tpms_decision_process(
     int class_count,
     char concept_str[],
     char context[],
-    float confidence
+    float* confidence
 );
 
 void tpms_get_active_concepts(

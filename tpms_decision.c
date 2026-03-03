@@ -17,14 +17,14 @@ static const char* CONCEPT_NAMES[] = {
     "temp_trend_down",
     "temp_high",
     "temp_low",
-    "sensor_fault",
+    "sensor_data_invalid",
 };
 
 // ================================
 // Class Names (match model order)
 // ================================
 static const char* CLASS_NAMES[] = {
-"Normal", "Normal_Thermal", "Slow_Leak", "Fast_Leak", "Underinflated", "Sensor_Fault"
+"Normal Pressure Reading", "Temp Induced Pressure Reading", "Slow Leak of Air", "Tire Puncture Detected", "Tire Underinflated", "Sensor Fault Detected"
 };
 
 // ================================
@@ -73,6 +73,15 @@ static void interpret_concepts(
 ) {
 
     const float THRESH = 0.5f;
+    concept_str[0] = '\0';
+
+    // ---- SENSOR FAULT OVERRIDE ----
+    const int SENSOR_FAULT_IDX = 10;   // ⚠️ adjust if needed
+
+    if (concepts[SENSOR_FAULT_IDX] > THRESH) {
+        strcpy(concept_str, CONCEPT_NAMES[SENSOR_FAULT_IDX]);
+        return;
+    }
 
     for (int i = 0; i < concept_count; i++) {
 
@@ -80,7 +89,7 @@ static void interpret_concepts(
 
             if (i < (int)(sizeof(CONCEPT_NAMES)/sizeof(CONCEPT_NAMES[0])))
             {
-                //strcat(concept_str, " ");
+                strcat(concept_str, " ");
                 strcat(concept_str, CONCEPT_NAMES[i]);
             }
             else 
@@ -88,38 +97,6 @@ static void interpret_concepts(
         }
     }
 }
-
-// void tpms_get_active_concepts(
-//     float concepts[],
-//     int concept_count,
-//     char *concept_str
-// )
-// {
-//     concept_str[0] = '\0';
-
-//     // ---- SENSOR FAULT OVERRIDE ----
-//     const int SENSOR_FAULT_IDX = 10;   // ⚠️ adjust if needed
-
-//     if (concepts[SENSOR_FAULT_IDX] > 0.6f) {
-//         strcpy(concept_str, "Sensor Data Invalid");
-//         return;
-//     }
-
-//     // ---- NORMAL CONCEPT EXTRACTION ----
-//     for (int i = 0; i < concept_count; i++) {
-
-//         if (concepts[i] > 0.6f) {
-
-//             if (strlen(concept_str) > 0)
-//                 strcat(concept_str, " ");
-
-//             strcat(concept_str, CONCEPT_NAMES[i]);
-//         }
-//     }
-
-//     if (strlen(concept_str) == 0)
-//         strcpy(concept_str, "NoStrongConcept");
-// }
 
 // ================================
 // Main Decision Function
@@ -131,10 +108,8 @@ void tpms_decision_process(
     int class_count,
     char concept_str[],
     char context[],
-    float confidence
+    float* confidence
 ) {
-
-    printf("\n=== TPMS OUTPUT ===\n");
 
     // 1. Concept evidence
     interpret_concepts(concepts, concept_count, concept_str);
@@ -149,5 +124,5 @@ void tpms_decision_process(
         strcpy(context, "UNKNOWN_STATE");
     }
 
-    confidence = class_probs[class_id];
+    *confidence = class_probs[class_id];
 }

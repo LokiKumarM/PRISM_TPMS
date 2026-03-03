@@ -218,3 +218,33 @@ void generate_sensor_fault(float P[], float T[]) {
     }
 }
 
+// Adjust probabilities as needed
+void generate_weighted_scenario(float pressure[], float temperature[])
+{
+    int r = rand() % 100;   // 0–99
+
+    if (r < 20) {
+        // 20% Normal
+        generate_normal(pressure, temperature);
+    }
+    else if (r < 40) {
+        // 20% Slow leak
+        generate_normal_thermal(pressure, temperature);
+    }
+    else if (r < 60) {
+        // 20% Slow leak
+        generate_slow_leak(pressure, temperature);
+    }
+    else if (r < 75) {
+        // 15% Underinflated
+        generate_underinflated(pressure, temperature);
+    }
+    else if (r < 90) {
+        // 15% Fast leak
+        generate_fast_leak(pressure, temperature);
+    }
+    else {
+        // 10% Sensor fault
+        generate_sensor_fault(pressure, temperature);
+    }
+}

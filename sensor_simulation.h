@@ -13,5 +13,6 @@ void generate_slow_leak(float P[], float T[]);
 void generate_fast_leak(float P[], float T[]);
 void generate_underinflated(float P[], float T[]);
 void generate_sensor_fault(float P[], float T[]);
+void generate_weighted_scenario(float P[], float T[]);
 
 #endif

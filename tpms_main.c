@@ -19,9 +19,8 @@ int main()
     float confidence = 0.0f;
 
     char line1[17];
-    char context[32];
-    //char action[32];
-    char explanation[64];
+    char context_out[64];
+    char concept_out[128] = "";
     char message[256];
 
     // -------------------------------------------------
@@ -31,19 +30,6 @@ int main()
 
     sensor_sim_init();
     lcd_init();
-
-    // // -------------------------------------------------
-    // // BOOT SPLASH SCREEN
-    // // -------------------------------------------------
-    // lcd_set_cursor(0, 0);
-    // lcd_print("vAIcle TPMS");
-
-    // lcd_set_cursor(1, 0);
-    // lcd_print("Booting...");
-
-    // sleep(3);
-
-    // lcd_clear();
 
     // -------------------------------------------------
     // INIT MODEL (use absolute path)
@@ -69,7 +55,7 @@ int main()
     int ts_index = 0;
 
     // -------- INITIAL SCENARIO --------
-    generate_normal(pressure, temperature);
+    generate_normal_thermal(pressure, temperature);
 
     tpms_model_infer(pressure, temperature, concepts, classes);
 
@@ -86,56 +72,51 @@ int main()
         usleep(20000);   // smoother animation
     }
 
-    // tpms_get_active_concepts(concepts, NUM_CONCEPTS, explanation);
-
-
-    tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, explanation, context, confidence);
-
-    // tpms_get_action(classes, NUM_CLASSES, action);
+    tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, concept_out, context_out, &confidence);
 
     snprintf(message, sizeof(message),
-             "%s -> %s (Confidence: %.3f)", explanation, context, confidence);
+             "Tire Condition: %s Context: %s", concept_out, context_out);
     scroll_text_line2(message);
-
+    usleep(500000); 
+    lcd_clear();
     // // -------------------------------------------------
     // // ⭐ MAIN LOOP (runs forever)
     // // -------------------------------------------------
-    // while (1)
-    // {
-    //     // ---- Scenario update ----
-    //     if (counter >= SCENARIO_INTERVAL)
-    //     {
-    //         generate_weighted_scenario(pressure, temperature);
+    while (1)
+    {
+        // ---- Scenario update ----
+        if (counter >= SCENARIO_INTERVAL)
+        {
+            generate_weighted_scenario(pressure, temperature);
 
-    //         tpms_model_infer(pressure, temperature, concepts, classes);
+            tpms_model_infer(pressure, temperature, concepts, classes);
 
-    //         tpms_get_active_concepts(concepts, NUM_CONCEPTS, explanation);
-    //         tpms_get_action(classes, NUM_CLASSES, action);
+           tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, concept_out, context_out, &confidence);
 
-    //         snprintf(message, sizeof(message),
-    //                  "%s -> %s", explanation, action);
+           snprintf(message, sizeof(message),
+             "Tire Condition: %s Context: %s", concept_out, context_out);
 
-    //         counter = 0;
-    //     }
+            counter = 0;
+        }
 
-    //     // ---- Display time-series samples ----
-    //     for (ts_index = 0; ts_index < WINDOW_SIZE; ts_index++)
-    //     {
-    //         snprintf(line1, sizeof(line1),
-    //                  "P:%0.1f T:%0.1f",
-    //                  pressure[ts_index],
-    //                  temperature[ts_index]);
+        // ---- Display time-series samples ----
+        for (ts_index = 0; ts_index < WINDOW_SIZE; ts_index++)
+        {
+            snprintf(line1, sizeof(line1),
+                     "P:%0.1f T:%0.1f",
+                     pressure[ts_index],
+                     temperature[ts_index]);
 
-    //         lcd_set_cursor(0, 0);
-    //         lcd_print(line1);
+            lcd_set_cursor(0, 0);
+            lcd_print(line1);
 
-    //         usleep(20000);   // smoother animation
-    //     }
+            usleep(20000);   // smoother animation
+        }
 
-    //     // ---- Interpretation ----
-    //     scroll_text_line2(message);
-
-    //     sleep(1);
-    //     counter++;
-    // }
+        // ---- Interpretation ----
+        scroll_text_line2(message);
+        sleep(1);
+        lcd_clear();
+        counter++;
+    }
 }

@@ -109,6 +109,6 @@ void scroll_text_line2(const char *msg)
         lcd_set_cursor(1, 0);
         lcd_print(window);
 
-        usleep(300000);   // 300 ms scroll speed
+        usleep(200000);   // 300 ms scroll speed
     }
 }
