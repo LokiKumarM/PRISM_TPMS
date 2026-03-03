@@ -1,5 +1,7 @@
 #include "tpms_decision.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 // ================================
 // Concept Names (match model order)
@@ -66,26 +68,58 @@ static int get_predicted_class(float probs[], int count) {
 // ================================
 static void interpret_concepts(
     float concepts[],
-    int concept_count
+    int concept_count, 
+    char concept_str[]
 ) {
 
     const float THRESH = 0.5f;
-
-    printf("Evidence: [");
 
     for (int i = 0; i < concept_count; i++) {
 
         if (concepts[i] > THRESH) {
 
             if (i < (int)(sizeof(CONCEPT_NAMES)/sizeof(CONCEPT_NAMES[0])))
-                printf("%s ", CONCEPT_NAMES[i]);
-            else
-                printf("concept_%d ", i);
+            {
+                //strcat(concept_str, " ");
+                strcat(concept_str, CONCEPT_NAMES[i]);
+            }
+            else 
+                strcat(concept_str, " No_Strong_Concept");
         }
     }
-
-    printf("]\n");
 }
+
+// void tpms_get_active_concepts(
+//     float concepts[],
+//     int concept_count,
+//     char *concept_str
+// )
+// {
+//     concept_str[0] = '\0';
+
+//     // ---- SENSOR FAULT OVERRIDE ----
+//     const int SENSOR_FAULT_IDX = 10;   // ⚠️ adjust if needed
+
+//     if (concepts[SENSOR_FAULT_IDX] > 0.6f) {
+//         strcpy(concept_str, "Sensor Data Invalid");
+//         return;
+//     }
+
+//     // ---- NORMAL CONCEPT EXTRACTION ----
+//     for (int i = 0; i < concept_count; i++) {
+
+//         if (concepts[i] > 0.6f) {
+
+//             if (strlen(concept_str) > 0)
+//                 strcat(concept_str, " ");
+
+//             strcat(concept_str, CONCEPT_NAMES[i]);
+//         }
+//     }
+
+//     if (strlen(concept_str) == 0)
+//         strcpy(concept_str, "NoStrongConcept");
+// }
 
 // ================================
 // Main Decision Function
@@ -94,30 +128,26 @@ void tpms_decision_process(
     float concepts[],
     int concept_count,
     float class_probs[],
-    int class_count
+    int class_count,
+    char concept_str[],
+    char context[],
+    float confidence
 ) {
 
     printf("\n=== TPMS OUTPUT ===\n");
 
     // 1. Concept evidence
-    interpret_concepts(concepts, concept_count);
+    interpret_concepts(concepts, concept_count, concept_str);
 
     // 2. Predicted class
     int class_id =
         get_predicted_class(class_probs, class_count);
 
-    const char* behaviour =
-        (class_id < (int)(sizeof(CLASS_NAMES)/sizeof(CLASS_NAMES[0])))
-        ? CLASS_NAMES[class_id]
-        : "UNKNOWN";
+    if (class_id < (int)(sizeof(CLASS_NAMES)/sizeof(CLASS_NAMES[0]))) {
+        strcpy(context, CLASS_NAMES[class_id]);
+    } else {
+        strcpy(context, "UNKNOWN_STATE");
+    }
 
-    float confidence = class_probs[class_id];
-
-    printf("Behaviour: %s\n", behaviour);
-    printf("Confidence: %.3f\n", confidence);
-
-    // 3. Action mapping
-    const char* action = get_action(class_id);
-
-    printf("Action: %s\n", action);
+    confidence = class_probs[class_id];
 }

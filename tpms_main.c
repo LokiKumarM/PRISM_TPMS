@@ -16,35 +16,37 @@ int main()
 
     float concepts[NUM_CONCEPTS];
     float classes[NUM_CLASSES];
+    float confidence = 0.0f;
 
     char line1[17];
-    char action[32];
+    char context[32];
+    //char action[32];
     char explanation[64];
-    char message[128];
+    char message[256];
 
     // -------------------------------------------------
-    // ⭐ Wait for I2C device (important at boot)
+    // Wait for I2C device (important at boot)
     // -------------------------------------------------
     sleep(2);
 
     sensor_sim_init();
     lcd_init();
 
+    // // -------------------------------------------------
+    // // BOOT SPLASH SCREEN
+    // // -------------------------------------------------
+    // lcd_set_cursor(0, 0);
+    // lcd_print("vAIcle TPMS");
+
+    // lcd_set_cursor(1, 0);
+    // lcd_print("Booting...");
+
+    // sleep(3);
+
+    // lcd_clear();
+
     // -------------------------------------------------
-    // ⭐ BOOT SPLASH SCREEN
-    // -------------------------------------------------
-    lcd_set_cursor(0, 0);
-    lcd_print("vAIcle TPMS");
-
-    lcd_set_cursor(1, 0);
-    lcd_print("Booting...");
-
-    sleep(3);
-
-    lcd_clear();
-
-    // -------------------------------------------------
-    // ⭐ INIT MODEL (use absolute path)
+    // INIT MODEL (use absolute path)
     // -------------------------------------------------
     if (tpms_model_init("model_tpms_8.tflite") != 0)
     {
@@ -56,10 +58,10 @@ int main()
     }
 
     // -------------------------------------------------
-    // ⭐ START MESSAGE
+    // START MESSAGE
     // -------------------------------------------------
-    scroll_text_line2("Starting TPMS Engine...");
-    sleep(2);
+    scroll_text_line2("Starting Intelligent TPMS Engine...");
+    sleep(1);
     lcd_clear();
 
     int counter = 0;
@@ -85,10 +87,15 @@ int main()
     }
 
     // tpms_get_active_concepts(concepts, NUM_CONCEPTS, explanation);
+
+
+    tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, explanation, context, confidence);
+
     // tpms_get_action(classes, NUM_CLASSES, action);
 
-    // snprintf(message, sizeof(message),
-    //          "%s -> %s", explanation, action);
+    snprintf(message, sizeof(message),
+             "%s -> %s (Confidence: %.3f)", explanation, context, confidence);
+    scroll_text_line2(message);
 
     // // -------------------------------------------------
     // // ⭐ MAIN LOOP (runs forever)
