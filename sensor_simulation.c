@@ -3,6 +3,10 @@
 #include <math.h>
 #include <time.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 static float rand_uniform(float min, float max) {
     return min + ((float)rand() / RAND_MAX) * (max - min);
 }

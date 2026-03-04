@@ -7,6 +7,16 @@
 #include "tpms_decision.h"
 #include "lcd_i2c.h"
 
+// -------------------------------------------------
+// HIGH RESOLUTION TIMER (milliseconds)
+// -------------------------------------------------
+double get_time_ms()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (ts.tv_sec * 1000.0) + (ts.tv_nsec / 1e6);
+}
+
 int main()
 {
     srand(time(NULL));
@@ -23,29 +33,20 @@ int main()
     char concept_out[128] = "";
     char message[256];
 
-    // -------------------------------------------------
-    // Wait for I2C device (important at boot)
-    // -------------------------------------------------
     sleep(2);
 
     sensor_sim_init();
     lcd_init();
 
-    // -------------------------------------------------
-    // INIT MODEL (use absolute path)
-    // -------------------------------------------------
     if (tpms_model_init("model_tpms_8.tflite") != 0)
     {
         lcd_set_cursor(0, 0);
         lcd_print("Model Error");
         lcd_set_cursor(1, 0);
         lcd_print("Init Failed");
-        while (1);   // Halt but keep message
+        while (1);
     }
 
-    // -------------------------------------------------
-    // START MESSAGE
-    // -------------------------------------------------
     scroll_text_line2("Starting Intelligent TPMS Engine...");
     sleep(1);
     lcd_clear();
@@ -54,52 +55,80 @@ int main()
     const int SCENARIO_INTERVAL = 1;
     int ts_index = 0;
 
-    // -------- INITIAL SCENARIO --------
     generate_normal_thermal(pressure, temperature);
+
+    // -------------------------------------------------
+    // ⭐ MEASURE MODEL INFERENCE TIME
+    // -------------------------------------------------
+    double infer_start = get_time_ms();
 
     tpms_model_infer(pressure, temperature, concepts, classes);
 
-    for (ts_index = 0; ts_index < WINDOW_SIZE; ts_index++)
-    {
-        snprintf(line1, sizeof(line1),
-                    "P:%0.1f T:%0.1f",
-                    pressure[ts_index],
-                    temperature[ts_index]);
+    double infer_end = get_time_ms();
+    double inference_latency = infer_end - infer_start;
 
-        lcd_set_cursor(0, 0);
-        lcd_print(line1);
+    // -------------------------------------------------
+    // ⭐ MEASURE FULL DECISION PIPELINE TIME
+    // -------------------------------------------------
+    double decision_start = get_time_ms();
 
-        usleep(20000);   // smoother animation
-    }
+    tpms_decision_process(concepts, NUM_CONCEPTS,
+                          classes, NUM_CLASSES,
+                          concept_out, context_out,
+                          &confidence);
 
-    tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, concept_out, context_out, &confidence);
+    double decision_end = get_time_ms();
+    double full_pipeline_latency = decision_end - infer_start;
+
+    printf("Inference Latency: %.3f ms\n", inference_latency);
+    printf("Full TPMS Decision Latency: %.3f ms\n", full_pipeline_latency);
 
     snprintf(message, sizeof(message),
-             "Tire Condition: %s Context: %s", concept_out, context_out);
+        "Semantics:%s Context:%s Conf:%0.2f",
+        concept_out, context_out, confidence);
+
     scroll_text_line2(message);
-    usleep(500000); 
+    usleep(500000);
     lcd_clear();
-    // // -------------------------------------------------
-    // // ⭐ MAIN LOOP (runs forever)
-    // // -------------------------------------------------
+
+    // -------------------------------------------------
+    // ⭐ MAIN LOOP
+    // -------------------------------------------------
     while (1)
     {
-        // ---- Scenario update ----
         if (counter >= SCENARIO_INTERVAL)
         {
             generate_weighted_scenario(pressure, temperature);
 
+            // ---- Measure inference ----
+            infer_start = get_time_ms();
+
             tpms_model_infer(pressure, temperature, concepts, classes);
 
-           tpms_decision_process(concepts, NUM_CONCEPTS, classes, NUM_CLASSES, concept_out, context_out, &confidence);
+            infer_end = get_time_ms();
+            inference_latency = infer_end - infer_start;
 
-           snprintf(message, sizeof(message),
-             "Tire Condition: %s Context: %s", concept_out, context_out);
+            // ---- Measure full pipeline ----
+            decision_start = get_time_ms();
+
+            tpms_decision_process(concepts, NUM_CONCEPTS,
+                                  classes, NUM_CLASSES,
+                                  concept_out, context_out,
+                                  &confidence);
+
+            decision_end = get_time_ms();
+            full_pipeline_latency = decision_end - infer_start;
+
+            // printf("Inference: %.3f ms | Full Pipeline: %.3f ms\n",
+            //        inference_latency,
+            //        full_pipeline_latency);
+
+            snprintf(message, sizeof(message), "Semantics:%s Context:%s Conf:%0.2f",
+                concept_out, context_out, confidence);
 
             counter = 0;
         }
 
-        // ---- Display time-series samples ----
         for (ts_index = 0; ts_index < WINDOW_SIZE; ts_index++)
         {
             snprintf(line1, sizeof(line1),
@@ -110,10 +139,9 @@ int main()
             lcd_set_cursor(0, 0);
             lcd_print(line1);
 
-            usleep(20000);   // smoother animation
+            usleep(20000);
         }
 
-        // ---- Interpretation ----
         scroll_text_line2(message);
         sleep(1);
         lcd_clear();

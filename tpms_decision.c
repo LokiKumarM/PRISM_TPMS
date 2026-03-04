@@ -24,29 +24,8 @@ static const char* CONCEPT_NAMES[] = {
 // Class Names (match model order)
 // ================================
 static const char* CLASS_NAMES[] = {
-"Normal Pressure Reading", "Temp Induced Pressure Reading", "Slow Leak of Air", "Tire Puncture Detected", "Tire Underinflated", "Sensor Fault Detected"
+"NORMAL", "NORMAL_THERMAL", "SLOW_LEAK", "FAST_LEAK", "UNDERINFLATED", "SENSOR_FAULT"
 };
-
-// ================================
-// Action Mapping
-// ================================
-static const char* get_action(int class_id) {
-
-    switch (class_id) {
-
-        case 0: return "NO_ACTION";
-
-        case 1: return "CHECK_TIRE_SOON";
-
-        case 2: return "PULL_OVER_IMMEDIATELY";
-
-        case 3: return "INFLATE_TIRE";
-
-        case 4: return "CHECK_SENSOR";
-
-        default: return "UNKNOWN";
-    }
-}
 
 // ================================
 // Find Argmax Class

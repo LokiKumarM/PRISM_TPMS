@@ -1,5 +1,6 @@
 #include "lcd_i2c.h"
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
