@@ -20,9 +20,9 @@ PRISM_TPMS takes a window of raw tyre pressure and temperature readings and clas
 
 ## How It Works
 
-Pressure[64] ┐
+Pressure[64]  Temp[64]     
 ├─► [ Sliding-window buffer ] ─► [ Decision engine ] ─► Status + Reason ─► LCD / stdout
-Temp[64]     ┘                                   │
+                                 │
 ├─ Rule-based:  threshold rules (FSD)
 └─ Model-based: TFLite → 11 concepts + 6 class probs → decision layer
 
